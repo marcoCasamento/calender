@@ -1,5 +1,3 @@
-using Api.Models;
-
 namespace Api.Data;
 
 internal static class AnimalData

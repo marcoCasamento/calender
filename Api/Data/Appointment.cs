@@ -1,4 +1,6 @@
-namespace Api.Models;
+using System.ComponentModel.DataAnnotations;
+
+namespace Api.Data;
 
 public enum AppointmentStatus
 {
@@ -11,19 +13,19 @@ public enum AppointmentStatus
 
 public class Appointment
 {
+    [Key]
     public required Guid Id { get; set; }
 
     public required DateTime StartTime { get; set; }
 
     public required DateTime EndTime { get; set; }
-
-    public required Guid AnimalId { get; set; }
-
+    public required Animal Animal { get; set; } 
+    public Guid AnimalId { get; set; } //ease seed and query. not "required", as this should be handled by the ORM
     public required Guid CustomerId { get; set; }
 
     public required Guid VeterinarianId { get; set; }
 
     public AppointmentStatus Status { get; set; } = AppointmentStatus.Scheduled;
-
+    [MaxLength(500)]
     public string? Notes { get; set; }
 }

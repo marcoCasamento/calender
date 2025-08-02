@@ -1,5 +1,3 @@
-using Api.Models;
-
 namespace Api.Data;
 
 internal static class AppointmentData
@@ -9,6 +7,7 @@ internal static class AppointmentData
         new Appointment
         {
             Id = new Guid("f47ac10b-58cc-4372-a567-0e02b2c3d479"),
+            Animal = AnimalData.Animals.First(),
             AnimalId = AnimalData.Animals.First().Id,
             CustomerId = AnimalData.Animals.First().OwnerId,
             StartTime = DateTime.Now.AddDays(1),
@@ -19,6 +18,7 @@ internal static class AppointmentData
         new Appointment
         {
             Id = new Guid("f47ac10b-58cc-4372-a567-0e02b2c3d480"),
+            Animal = AnimalData.Animals.First(),
             AnimalId = AnimalData.Animals.First().Id,
             CustomerId = AnimalData.Animals.First().OwnerId,
             Notes = "Follow-up check",

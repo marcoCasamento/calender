@@ -416,3 +416,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+/Api/calendar.db
+/Api/calendar.db-shm
+/Api/calendar.db-wal
