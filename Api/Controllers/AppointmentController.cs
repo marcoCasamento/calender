@@ -20,6 +20,30 @@ public class AppointmentController : ControllerBase
         {
             return BadRequest("AnimalId and CustomerId are required.");
         }
+        if (appointment.StartTime == default || appointment.EndTime == default)
+        {
+            return BadRequest("StartTime and EndTime are required.");
+        }
+        if (appointment.StartTime >= appointment.EndTime)
+        {
+            return BadRequest("EndTime must be after StartTime.");
+        }
+        if (appointment.VeterinarianId == Guid.Empty)
+        {
+            return BadRequest("VeterinarianId is required.");
+        }
+        if (AnimalData.Animals.All(a => a.Id != appointment.AnimalId))
+        {
+            return BadRequest("AnimalId does not exist.");
+        }
+        if (AppointmentData.Appointments.Any(a => a.StartTime < appointment.EndTime && a.EndTime > appointment.StartTime && a.AnimalId == appointment.AnimalId))
+        {
+            return BadRequest("The animal already has an appointment during this time.");
+        }
+        if (AppointmentData.Appointments.Any(a => a.StartTime < appointment.EndTime && a.EndTime > appointment.StartTime && a.VeterinarianId == appointment.VeterinarianId))
+        {
+            return BadRequest("The Veterinarian already has an appointment during this time.");
+        }
 
         appointment.Id = Guid.NewGuid();
 

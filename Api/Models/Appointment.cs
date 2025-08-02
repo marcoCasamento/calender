@@ -11,17 +11,17 @@ public enum AppointmentStatus
 
 public class Appointment
 {
-    public Guid Id { get; set; }
+    public required Guid Id { get; set; }
 
-    public DateTime StartTime { get; set; }
+    public required DateTime StartTime { get; set; }
 
-    public DateTime EndTime { get; set; }
+    public required DateTime EndTime { get; set; }
 
-    public Guid AnimalId { get; set; }
+    public required Guid AnimalId { get; set; }
 
-    public Guid CustomerId { get; set; }
+    public required Guid CustomerId { get; set; }
 
-    public Guid VeterinarianId { get; set; }
+    public required Guid VeterinarianId { get; set; }
 
     public AppointmentStatus Status { get; set; } = AppointmentStatus.Scheduled;
 
