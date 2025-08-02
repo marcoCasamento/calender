@@ -9,13 +9,15 @@ namespace Api.Controllers;
 [Route("api/[controller]")]
 public class AppointmentController : ControllerBase
 {
-    private readonly ILogger<AppointmentController> logger;
+    private readonly IAppointmentData _appointmentData;
+    private readonly IAnimalData _animalData;
 
-    public AppointmentController(ILogger<AppointmentController> logger)
+    public AppointmentController(IAppointmentData appointmentData, IAnimalData animalData)
     {
-        
-        this.logger = logger;
+        _appointmentData = appointmentData;
+        _animalData = animalData;
     }
+
     [HttpPost]
     public ActionResult<Appointment> CreateAppointment([FromBody] Appointment appointment)
     {
@@ -40,22 +42,22 @@ public class AppointmentController : ControllerBase
         {
             return BadRequest("VeterinarianId is required.");
         }
-        if (AnimalData.Animals.All(a => a.Id != appointment.AnimalId))
+        if (_animalData.Animals.All(a => a.Id != appointment.AnimalId))
         {
             return BadRequest("AnimalId does not exist.");
         }
-        if (AppointmentData.Appointments.Any(a => a.StartTime < appointment.EndTime && a.EndTime > appointment.StartTime && a.AnimalId == appointment.AnimalId))
+        if (_appointmentData.Appointments.Any(a => a.StartTime < appointment.EndTime && a.EndTime > appointment.StartTime && a.AnimalId == appointment.AnimalId))
         {
             return BadRequest("The animal already has an appointment during this time.");
         }
-        if (AppointmentData.Appointments.Any(a => a.StartTime < appointment.EndTime && a.EndTime > appointment.StartTime && a.VeterinarianId == appointment.VeterinarianId))
+        if (_appointmentData.Appointments.Any(a => a.StartTime < appointment.EndTime && a.EndTime > appointment.StartTime && a.VeterinarianId == appointment.VeterinarianId))
         {
             return BadRequest("The Veterinarian already has an appointment during this time.");
         }
 
         appointment.Id = Guid.NewGuid();
 
-        AppointmentData.Appointments.Add(appointment);
+        _appointmentData.Appointments.Add(appointment);
 
         return CreatedAtAction(nameof(GetAppointment), new { id = appointment.Id }, appointment);
     }
@@ -63,7 +65,7 @@ public class AppointmentController : ControllerBase
     [HttpGet("{id}")]
     public ActionResult<Appointment> GetAppointment(Guid id)
     {
-        var appointment = AppointmentData.Appointments.FirstOrDefault(a => a.Id == id);
+        var appointment = _appointmentData.Appointments.FirstOrDefault(a => a.Id == id);
         if (appointment == null)
         {
             return NotFound();
@@ -81,14 +83,10 @@ public class AppointmentController : ControllerBase
         if (request.StartDate > request.EndDate)
             return BadRequest("StartDate must be before EndDate.");
 
-        var appointments = AppointmentData.Appointments
+        var appointments = _appointmentData.Appointments
             .Where(a => a.VeterinarianId == request.VetId && a.StartTime >= request.StartDate && a.StartTime <= request.EndDate)
             .Select(a => {
-                var animal = AnimalData.Animals.FirstOrDefault(an => an.Id == a.AnimalId);
-                if (animal == null)
-                {
-                    logger.LogWarning("Animal with ID {AnimalId} not found for appointment {AppointmentId}", a.AnimalId, a.Id);
-                }
+                var animal = _animalData.Animals.FirstOrDefault(an => an.Id == a.AnimalId);
                 return new GetAppointmentsForVetResponse
                 {
                     StartTime = a.StartTime,
