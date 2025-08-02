@@ -32,6 +32,8 @@ public class AnimalController : ControllerBase
     public ActionResult<Animal> GetAnimal(Guid id)
     {
         var animal = AnimalData.Animals.FirstOrDefault(a => a.Id == id);
+        if (animal == null)
+            return NotFound();
         return Ok(animal);
     }
 
