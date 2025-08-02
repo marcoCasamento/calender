@@ -9,7 +9,7 @@ namespace Api.Controllers;
 public class AppointmentController : ControllerBase
 {
     [HttpPost]
-    public ActionResult<Animal> CreateAppointment([FromBody] Appointment appointment)
+    public ActionResult<Appointment> CreateAppointment([FromBody] Appointment appointment)
     {
         if (appointment == null)
         {

@@ -1,6 +1,36 @@
 @Api_HostAddress = http://localhost:5160
 
-GET {{Api_HostAddress}}/weatherforecast/
+# Animal Endpoints
+POST {{Api_HostAddress}}/api/animal
+Content-Type: application/json
+
+{
+  "name": "Fido",
+  "ownerId": "00000000-0000-0000-0000-000000000001"
+}
+
+###
+GET {{Api_HostAddress}}/api/animal/f47ac10b-58cc-4372-a567-0e02b2c3d479
+Accept: application/json
+
+###
+DELETE {{Api_HostAddress}}/api/animal/{id}
+
+###
+# Appointment Endpoints
+POST {{Api_HostAddress}}/api/appointment
+Content-Type: application/json
+
+{
+  "animalId": "00000000-0000-0000-0000-000000000001",
+  "customerId": "00000000-0000-0000-0000-000000000002",
+  "startTime": "2024-06-01T10:00:00Z",
+  "endTime": "2024-06-01T11:00:00Z",
+  "notes": "Routine checkup"
+}
+
+###
+GET {{Api_HostAddress}}/api/appointment/{id}
 Accept: application/json
 
 ###
