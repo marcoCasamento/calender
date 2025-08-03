@@ -2,8 +2,6 @@ using Api.Models;
 
 namespace Api.Services;
 
-
-//I often FluentValidation for validation, but I don't want to add a dependency on it here and the project is small enough that a custom validation service is sufficient.
 public interface IValidationService
 {
     Task<ValidationResult> ValidateAppointmentAsync(BaseAppointmentRequest request, CancellationToken cancellationToken = default);
