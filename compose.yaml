@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  calender:
+    build:
+      context: ./Api
+      dockerfile: Dockerfile
+    image: calender
+    ports:
+      - "8080:80"
+      - "8443:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://0.0.0.0:443;http://0.0.0.0:80
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=aspnetapp.pwd
+    volumes:
+      - calendar-data:/app
+      - ./https:/https:ro
+volumes:
+  calendar-data:
+    driver: local

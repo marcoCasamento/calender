@@ -1,6 +1,5 @@
-@Api_HostAddress = http://localhost:5160
-
 # Animal Endpoints
+### CreateAnimal
 POST {{Api_HostAddress}}/api/animal
 Content-Type: application/json
 
@@ -9,15 +8,16 @@ Content-Type: application/json
   "ownerId": "00000000-0000-0000-0000-000000000001"
 }
 
-###
+### GetAnimal
 GET {{Api_HostAddress}}/api/animal/f47ac10b-58cc-4372-a567-0e02b2c3d479
 Accept: application/json
 
-###
-DELETE {{Api_HostAddress}}/api/animal/{id}
+### DeleteAnimal
+DELETE {{Api_HostAddress}}/api/animal/f47ac10b-58cc-4372-a567-0e02b2c3d479
 
 ###
 # Appointment Endpoints
+### CreateAppointment
 POST {{Api_HostAddress}}/api/appointment
 Content-Type: application/json
 
@@ -29,13 +29,28 @@ Content-Type: application/json
   "notes": "Routine checkup"
 }
 
-###
-GET {{Api_HostAddress}}/api/appointment/{id}
+### GetAppointment
+GET {{Api_HostAddress}}/api/appointment/f47ac10b-58cc-4372-a567-0e02b2c3d479
 Accept: application/json
 
 ###
-# Vet Appointments Endpoint
+### ListVetAppointments
 GET {{Api_HostAddress}}/api/appointment/vet?vetId=f47ac10b-58cc-4372-a567-0e02b2c3d481&startDate=2025-08-01T00:00:00Z&endDate=2025-08-30T23:59:59Z
 Accept: application/json
+
+###
+### UpdateAppointment
+PUT {{Api_HostAddress}}/api/appointment/f47ac10b-58cc-4372-a567-0e02b2c3d479
+Content-Type: application/json
+
+{
+  "startTime": "2025-08-02T10:00:00Z",
+  "endTime": "2025-08-02T11:00:00Z",
+  "animalId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "customerId": "f47ac10b-58cc-4372-a567-0e02b2c3d480",
+  "veterinarianId": "f47ac10b-58cc-4372-a567-0e02b2c3d481",
+  "status": "Scheduled",
+  "notes": "Updated notes for routine checkup"
+}
 
 ###

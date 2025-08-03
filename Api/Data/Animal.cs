@@ -1,3 +1,5 @@
+using Api.Models;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace Api.Data;
@@ -16,4 +18,22 @@ public class Animal
     public string OwnerName { get; set; } = string.Empty; //that's questionable, but let's aI assume that an animal can exist without an owner name, so I make it optional
     [MaxLength(100)]
     public required string OwnerEmail { get; set; } //Need a way to contact the owner, so this is required
+
+    public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+
+    /// <summary>
+    /// Implicit conversion from CreateAnimalRequest to Animal
+    /// </summary>
+    public static implicit operator Animal(CreateAnimalRequest request)
+    {
+        return new Animal
+        {
+            Id = Guid.Empty, //ORM should take care of it
+            Name = request.Name,
+            OwnerEmail = request.OwnerEmail,
+            OwnerId = request.OwnerId,
+            BirthDate = request.BirthDate,
+            OwnerName = request.OwnerName,
+        };
+    }
 }

@@ -1,5 +1,6 @@
 using Api.Data;
 using Api.Models;
+using Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,11 +11,14 @@ namespace Api.Controllers;
 public class AppointmentController : ControllerBase
 {
     private readonly CalendarDbContext dbContext;
+    private readonly IValidationService validationService;
 
-    public AppointmentController(CalendarDbContext dbContext)
+    public AppointmentController(CalendarDbContext dbContext, IValidationService validationService)
     {
         this.dbContext = dbContext;
+        this.validationService = validationService;
     }
+
     [HttpPost]
     public async Task<ActionResult<AppointmentResponse>> CreateAppointment([FromBody] CreateAppointmentRequest createAppointmentRequest, CancellationToken cancellationToken)
     {
@@ -22,82 +26,23 @@ public class AppointmentController : ControllerBase
         {
             return BadRequest("Appointment cannot be null.");
         }
-        if (createAppointmentRequest.AnimalId == Guid.Empty)
+
+        var validationResult = await validationService.ValidateAppointmentAsync(createAppointmentRequest, cancellationToken);
+        if (!validationResult.IsValid)
         {
-            return BadRequest("AnimalId is required.");
-        }
-        if (createAppointmentRequest.CustomerId == Guid.Empty)
-        {
-            return BadRequest("CustomerId is required.");
-        }
-        if (createAppointmentRequest.StartTime == default || createAppointmentRequest.EndTime == default)
-        {
-            return BadRequest("StartTime and EndTime are required.");
-        }
-        if (createAppointmentRequest.StartTime >= createAppointmentRequest.EndTime)
-        {
-            return BadRequest("EndTime must be after StartTime.");
-        }
-        if (createAppointmentRequest.VeterinarianId == Guid.Empty)
-        {
-            return BadRequest("VeterinarianId is required.");
+            return BadRequest(string.Join("; ", validationResult.Errors));
         }
 
-        if (!await dbContext.Animals.AnyAsync(x => x.Id == createAppointmentRequest.AnimalId, cancellationToken: cancellationToken))
-        {
-            return BadRequest("AnimalId does not exist.");
-        }
-        //load conflictingAppointments before hands save a query to db and consequent context switch due to async
-        var conflictingAppointments = await dbContext.Appointments
-            .Where(a => a.StartTime < createAppointmentRequest.EndTime && a.EndTime > createAppointmentRequest.StartTime && a.Animal.Id == createAppointmentRequest.AnimalId)
-            .Select(x =>
-                new
-                {
-                    IsAnimalBusy = x.Animal.Id == createAppointmentRequest.AnimalId,
-                    IsVetBusy = x.VeterinarianId == createAppointmentRequest.VeterinarianId
-                })
-            .ToArrayAsync(cancellationToken: cancellationToken);
-
-        if (conflictingAppointments.Any(x => x.IsAnimalBusy))
-        {
-            return BadRequest("The animal already has an appointment during this time.");
-        }
-        if (conflictingAppointments.Any(x => x.IsVetBusy))
-        {
-            return BadRequest("The Veterinarian already has an appointment during this time.");
-        }
-
-        //automapper or other similar libraries can avoid manual mapping
-        var appointment = new Appointment()
-        {
-            Id = Guid.Empty,
-            Animal = null!,
-            AnimalId = createAppointmentRequest.AnimalId,
-            CustomerId = createAppointmentRequest.CustomerId,
-            StartTime = createAppointmentRequest.StartTime,
-            EndTime = createAppointmentRequest.EndTime,
-            VeterinarianId = createAppointmentRequest.VeterinarianId,
-            Notes = createAppointmentRequest.Notes,
-            Status = createAppointmentRequest.Status
-        };
+        //implicit operator conversion
+        Appointment appointment = createAppointmentRequest;
 
         //no async here, Id should be created on save by the db engine
         dbContext.Appointments.Add(appointment);
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        //automapper or similar can helps here. otherwise, an helper class to avoid repetition is recommendable
-        var appointmentResponse = new AppointmentResponse(
-            appointment.Id,
-            appointment.StartTime,
-            appointment.EndTime,
-            createAppointmentRequest.AnimalId,
-            appointment.CustomerId,
-            appointment.VeterinarianId,
-            appointment.Status,
-            appointment.Notes
-            );
-
+        //implicit operator conversion 
+        AppointmentResponse appointmentResponse = appointment;
 
         return CreatedAtAction(nameof(GetAppointment), new { id = appointment.Id }, appointmentResponse);
     }
@@ -106,16 +51,7 @@ public class AppointmentController : ControllerBase
     public async Task<ActionResult<AppointmentResponse>> GetAppointment(Guid id, CancellationToken cancellationToken)
     {
         var appointmentResponse = await dbContext.Appointments.Where(a => a.Id == id)
-            .Select(x => new AppointmentResponse(
-                x.Id,
-                x.StartTime,
-                x.EndTime,
-                x.Animal.Id,
-                x.CustomerId,
-                x.VeterinarianId,
-                x.Status,
-                x.Notes
-                ))
+            .Cast<AppointmentResponse>() //implicit operator conversion
             .FirstOrDefaultAsync(cancellationToken);
 
         if (appointmentResponse == null)
@@ -126,20 +62,94 @@ public class AppointmentController : ControllerBase
     }
 
     [HttpGet("vet")]
-    public async Task<ActionResult<IEnumerable<GetAppointmentsForVetResponse>>> GetAppointmentsForVet([FromQuery] GetAppointmentsForVetRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<ListVetAppointmentsResponse>>> ListVetAppointments([FromQuery] ListVetAppointmentsRequest request, CancellationToken cancellationToken)
     {
-        if (request.VetId == Guid.Empty)
-            return BadRequest("VetId is required.");
-        if (request.StartDate == default || request.EndDate == default)
-            return BadRequest("StartDate and EndDate are required.");
-        if (request.StartDate > request.EndDate)
-            return BadRequest("StartDate must be before EndDate.");
+        var validationResult = await validationService.ValidateGetAppointmentsForVetRequestAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(string.Join("; ", validationResult.Errors));
+        }
 
         var appointments = await dbContext.Appointments
             .Where(a => a.VeterinarianId == request.VetId && a.StartTime >= request.StartDate && a.StartTime <= request.EndDate)
-            .Select(a => new GetAppointmentsForVetResponse(a.StartTime, a.EndTime, a.Animal.Name, a.Animal.OwnerName, a.Status))
+            .Select(a => new ListVetAppointmentsResponse(a.StartTime, a.EndTime, a.Animal.Name, a.Animal.OwnerName, a.Status))
             .ToListAsync(cancellationToken);
 
         return Ok(appointments);
+    }
+
+    //TODO: this method should be restricted to admins or vets only.
+    //That would require an authorization mechanism. Built-in RBAC is probably fine, with roles like Admin, Vet, and Customer.
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateAppointment(Guid id, [FromBody] UpdateAppointmentRequest request, [FromServices] IMailSender mailSender, CancellationToken cancellationToken)
+    {
+        var appointment = await dbContext.Appointments
+            .Include(a => a.Animal)
+            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
+
+        if (appointment == null)
+            return NotFound();
+
+        var validationResult = await validationService.ValidateAppointmentAsync(request, id, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(string.Join("; ", validationResult.Errors));
+        }
+
+        //TODO: those checks should be moved to the validation service
+
+        // Only allow valid status values
+        if (request.Status != AppointmentStatus.Scheduled && request.Status != AppointmentStatus.Completed && request.Status != AppointmentStatus.Cancelled)
+            return BadRequest($"Status {request.Status} is not valid. Valid status are Scheduled, Completed, Cancelled");
+
+        // Prevent cancellation within 1 hour of StartTime
+        if (appointment.Status != AppointmentStatus.Cancelled && request.Status == AppointmentStatus.Cancelled)
+        {
+            var now = DateTime.UtcNow;
+            if (appointment.StartTime <= now.AddHours(1) && appointment.StartTime > now)
+                return BadRequest("Cannot cancel within 1 hour of scheduled start time.");
+        }
+
+        if (
+            appointment.StartTime == request.StartTime &&
+            appointment.EndTime == request.EndTime &&
+            appointment.AnimalId == request.AnimalId &&
+            appointment.CustomerId == request.CustomerId &&   //TODO: question, should I allow a customer to be changed ?
+            appointment.VeterinarianId == request.VeterinarianId &&
+            appointment.Status == request.Status &&
+            appointment.Notes == request.Notes
+            )
+        {
+            //nothing to update, log it and return NoContent
+            return NoContent();
+        }
+        bool appointmentIsBeingCancelled = appointment.Status != AppointmentStatus.Cancelled && request.Status == AppointmentStatus.Cancelled;
+
+        appointment.StartTime = request.StartTime;
+        appointment.EndTime = request.EndTime;
+        appointment.AnimalId = request.AnimalId;
+        appointment.CustomerId = request.CustomerId;
+        appointment.VeterinarianId = request.VeterinarianId;
+        appointment.Status = request.Status;
+        appointment.Notes = request.Notes;
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        // Send email if cancelled
+        if (appointmentIsBeingCancelled)
+        {
+            var ownerEmail = appointment.Animal.OwnerEmail;
+            if (!string.IsNullOrWhiteSpace(ownerEmail))
+            {
+                var mailMessage = new System.Net.Mail.MailMessage("noreply@calendar.local", ownerEmail)
+                {
+                    Subject = "Appointment Cancelled",
+                    Body = $"Dear {appointment.Animal.OwnerName}, your appointment for {appointment.Animal.Name} on {appointment.StartTime:f} has been cancelled."
+                };
+                await mailSender.SendMailAsync(mailMessage, cancellationToken);
+            }
+        }
+
+        return NoContent();
     }
 }

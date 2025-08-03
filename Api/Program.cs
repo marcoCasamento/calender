@@ -1,4 +1,5 @@
 using Api.Data;
+using Api.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -7,8 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddDbContext<CalendarDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=calendar.db")
-    //TODO: the warning below is due to the data used in seeding. I'd discuss with the team if it is acceptable to change seeding data (no DateTime.Now and alike) as I don't like to ignore this warning
+    //TODO: the warning below is due to the data used in seeding.
+    //in a real world scenario, I'd discuss with the team if it is acceptable to change seeding data
+    //so that it does not trigger this warning (actual seeding include non deterministic data like DateTime.Now) 
     .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning))
+
 );
 
 builder.Services.AddEndpointsApiExplorer();
@@ -18,6 +22,12 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
+
+
+builder.Services.AddSingleton<IMailSender, FakeMailSender>();
+builder.Services.AddScoped<IValidationService, ValidationService>();
+
+
 var app = builder.Build();
 
 

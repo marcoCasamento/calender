@@ -1,8 +1,8 @@
 namespace Api.Data;
 
-internal static class AnimalData
+public static class AnimalData
 {
-    internal static List<Animal> Animals = new()
+    public static List<Animal> Animals = new()
     {
         new Animal
         {
