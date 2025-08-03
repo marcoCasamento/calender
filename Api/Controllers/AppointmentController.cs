@@ -10,12 +10,10 @@ namespace Api.Controllers;
 public class AppointmentController : ControllerBase
 {
     private readonly CalendarDbContext dbContext;
-    private readonly ILogger<AppointmentController> logger;
 
-    public AppointmentController(CalendarDbContext dbContext, ILogger<AppointmentController> logger)
+    public AppointmentController(CalendarDbContext dbContext)
     {
         this.dbContext = dbContext;
-        this.logger = logger;
     }
     [HttpPost]
     public async Task<ActionResult<AppointmentResponse>> CreateAppointment([FromBody] CreateAppointmentRequest createAppointmentRequest, CancellationToken cancellationToken)
@@ -45,10 +43,7 @@ public class AppointmentController : ControllerBase
             return BadRequest("VeterinarianId is required.");
         }
 
-        //load animal to save on db hit
-        var animal = await dbContext.Animals.FirstOrDefaultAsync(x => x.Id == createAppointmentRequest.AnimalId, cancellationToken: cancellationToken);
-
-        if (animal is null)
+        if (!await dbContext.Animals.AnyAsync(x => x.Id == createAppointmentRequest.AnimalId, cancellationToken: cancellationToken))
         {
             return BadRequest("AnimalId does not exist.");
         }
@@ -76,7 +71,8 @@ public class AppointmentController : ControllerBase
         var appointment = new Appointment()
         {
             Id = Guid.Empty,
-            Animal = animal,
+            Animal = null!,
+            AnimalId = createAppointmentRequest.AnimalId,
             CustomerId = createAppointmentRequest.CustomerId,
             StartTime = createAppointmentRequest.StartTime,
             EndTime = createAppointmentRequest.EndTime,
@@ -95,7 +91,7 @@ public class AppointmentController : ControllerBase
             appointment.Id,
             appointment.StartTime,
             appointment.EndTime,
-            appointment.Animal.Id,
+            createAppointmentRequest.AnimalId,
             appointment.CustomerId,
             appointment.VeterinarianId,
             appointment.Status,
