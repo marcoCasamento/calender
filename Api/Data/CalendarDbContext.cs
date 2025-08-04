@@ -7,6 +7,7 @@ public class CalendarDbContext : DbContext
     public CalendarDbContext(DbContextOptions<CalendarDbContext> options) : base(options) { }
 
     public DbSet<Animal> Animals { get; set; }
+
     public DbSet<Appointment> Appointments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

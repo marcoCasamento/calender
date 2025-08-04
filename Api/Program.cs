@@ -17,6 +17,14 @@ builder.Services.AddDbContext<CalendarDbContext>(options =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+//todo: if allowed, includes Swashbuckle.AspNetCore.Annotations nuget pkg and EnableAnnotations
+//builder.Services.AddSwaggerGen(c =>
+//{
+//    c.EnableAnnotations();
+//    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Calender API", Version = "v1" });
+//});
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {

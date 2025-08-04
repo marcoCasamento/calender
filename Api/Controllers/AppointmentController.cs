@@ -19,6 +19,12 @@ public class AppointmentController : ControllerBase
         this.validationService = validationService;
     }
 
+    /// <summary>
+    /// Creates a new appointment in the system after validating the request.
+    /// </summary>
+    /// <param name="createAppointmentRequest">The appointment details to create.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    /// <returns>The created appointment response, or a validation error.</returns>
     [HttpPost]
     public async Task<ActionResult<AppointmentResponse>> CreateAppointment([FromBody] CreateAppointmentRequest createAppointmentRequest, CancellationToken cancellationToken)
     {
@@ -60,7 +66,12 @@ public class AppointmentController : ControllerBase
         }
         return Ok(appointmentResponse);
     }
-
+    /// <summary>
+    /// Lists all appointments for a specific veterinarian within a given date range.
+    /// </summary>
+    /// <param name="request">The request containing veterinarian ID and date range.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    /// <returns>A list of appointments for the specified veterinarian and date range.</returns>
     [HttpGet("vet")]
     public async Task<ActionResult<IEnumerable<ListVetAppointmentsResponse>>> ListVetAppointments([FromQuery] ListVetAppointmentsRequest request, CancellationToken cancellationToken)
     {
@@ -80,6 +91,14 @@ public class AppointmentController : ControllerBase
 
     //TODO: this method should be restricted to admins or vets only.
     //That would require an authorization mechanism. Built-in RBAC is probably fine, with roles like Admin, Vet, and Customer.
+    /// <summary>
+    /// Updates an existing appointment with new details. Validates the request, restricts status changes, and sends a cancellation email if applicable.
+    /// </summary>
+    /// <param name="id">The unique identifier of the appointment to update.</param>
+    /// <param name="request">The updated appointment details.</param>
+    /// <param name="mailSender">Service for sending notification emails.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    /// <returns>NoContent if successful, BadRequest for validation errors, or NotFound if the appointment does not exist.</returns>
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateAppointment(Guid id, [FromBody] UpdateAppointmentRequest request, [FromServices] IMailSender mailSender, CancellationToken cancellationToken)
     {
